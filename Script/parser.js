@@ -20,8 +20,8 @@ function download(url, callback) {
 }
 
 download('https://cdn.rawgit.com/github/gemoji/master/db/emoji.json', function(data) {
-  parse(data);
-  parse_categories(data);
+  parse(data, 9.1);
+  parse_categories(data, 9.1);
 });
 
 function parse(data, maxIosVersion) {
