@@ -20,14 +20,11 @@ function download(url, callback) {
 }
 
 download('https://cdn.rawgit.com/github/gemoji/master/db/emoji.json', function(data) {
-	parse(data);
-});
-
-download('https://cdn.rawgit.com/github/gemoji/master/db/Category-Emoji.json', function(data) {
+  parse(data);
   parse_categories(data);
 });
 
-function parse(data) {
+function parse(data, maxIosVersion) {
   const json = JSON.parse(data);
 
   var string = 'public let emojiList: [String: String] = [\n'
@@ -35,8 +32,15 @@ function parse(data) {
     const item = json[i];
 
     if (typeof item.aliases === "undefined"
+    || typeof item.ios_version === "undefined"
     || typeof item.emoji === "undefined"
     || item.emoji == "undefined") {
+      continue;
+    }
+
+    const iosVersion = Number.parseFloat(item.ios_version);
+
+    if (maxIosVersion && iosVersion > maxIosVersion) {
       continue;
     }
 
@@ -50,21 +54,44 @@ function parse(data) {
 };
 
 
-function parse_categories(data) {
-  const json = JSON.parse(data)["EmojiDataArray"];
+function parse_categories(data, maxIosVersion) {
+  const json = JSON.parse(data);
+  const categories = {};
 
   var string = 'public let emojiCategories: [String: [String]] = [\n'
   for (var i=0; i<json.length; ++i) {
     const item = json[i];
 
-		const category = item["CVDataTitle"].split("-").slice(-1).pop().toLowerCase();
-		const emojis = item["CVCategoryData"]["Data"].split(",").map(function(emoji) {
-			return '"' + emoji + '"';
-		}).join(",");
+    if (typeof item.aliases === "undefined"
+    || typeof item.category === "undefined"
+    || typeof item.category === "undefined"
+    || typeof item.ios_version === "undefined"
+    || item.emoji == "undefined") {
+      continue;
+    }
+
+    const category = item.category.toLowerCase();
+    const iosVersion = Number.parseFloat(item.ios_version);
+
+    if (maxIosVersion && iosVersion > maxIosVersion) {
+      continue;
+    }
+
+    if (categories[category]) {
+      categories[category].push(item.emoji);
+    } else {
+      categories[category] = [];
+    }
+  }
+
+  Object.keys(categories).forEach(function (category) {
+    const emojis = categories[category].map(function(emoji) {
+      return '"' + emoji + '"';
+    }).join(",");
 
     const itemString = '  "' + category + '": [' + emojis + '],\n'
-    string = string + itemString
-  }
+    string = string + itemString;
+  });
 
   string = string + ']'
 
